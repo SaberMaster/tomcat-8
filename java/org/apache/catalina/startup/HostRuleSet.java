@@ -83,20 +83,24 @@ public class HostRuleSet extends RuleSetBase {
     @Override
     public void addRuleInstances(Digester digester) {
 
+        // create host
         digester.addObjectCreate(prefix + "Host",
                                  "org.apache.catalina.core.StandardHost",
                                  "className");
         digester.addSetProperties(prefix + "Host");
         digester.addRule(prefix + "Host",
                          new CopyParentClassLoaderRule());
+        // add hostconfig listener for hostb
         digester.addRule(prefix + "Host",
                          new LifecycleListenerRule
                          ("org.apache.catalina.startup.HostConfig",
                           "hostConfigClass"));
+        // add to engine
         digester.addSetNext(prefix + "Host",
                             "addChild",
                             "org.apache.catalina.Container");
 
+        // parse Host alias
         digester.addCallMethod(prefix + "Host/Alias",
                                "addAlias", 0);
 
@@ -110,6 +114,7 @@ public class HostRuleSet extends RuleSetBase {
                             "org.apache.catalina.Cluster");
         //Cluster configuration end
 
+        // parse lifecycle listener for host
         digester.addObjectCreate(prefix + "Host/Listener",
                                  null, // MUST be specified in the element
                                  "className");
@@ -118,8 +123,12 @@ public class HostRuleSet extends RuleSetBase {
                             "addLifecycleListener",
                             "org.apache.catalina.LifecycleListener");
 
+
+        // parse realm
         digester.addRuleSet(new RealmRuleSet(prefix + "Host/"));
 
+
+        // parse valve
         digester.addObjectCreate(prefix + "Host/Valve",
                                  null, // MUST be specified in the element
                                  "className");

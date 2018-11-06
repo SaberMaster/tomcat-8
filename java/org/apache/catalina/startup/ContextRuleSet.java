@@ -102,6 +102,8 @@ public class ContextRuleSet extends RuleSetBase {
     @Override
     public void addRuleInstances(Digester digester) {
 
+        // if create is true, parse server.xml
+        // is false, create from HostConfig, only parse child node
         if (create) {
             digester.addObjectCreate(prefix + "Context",
                     "org.apache.catalina.core.StandardContext", "className");
@@ -120,6 +122,7 @@ public class ContextRuleSet extends RuleSetBase {
                                 "org.apache.catalina.Container");
         }
 
+        // parse lifecycle listener for context
         digester.addObjectCreate(prefix + "Context/Listener",
                                  null, // MUST be specified in the element
                                  "className");
@@ -128,6 +131,7 @@ public class ContextRuleSet extends RuleSetBase {
                             "addLifecycleListener",
                             "org.apache.catalina.LifecycleListener");
 
+        // add webapploader (class loader) for context
         digester.addObjectCreate(prefix + "Context/Loader",
                             "org.apache.catalina.loader.WebappLoader",
                             "className");
@@ -136,6 +140,7 @@ public class ContextRuleSet extends RuleSetBase {
                             "setLoader",
                             "org.apache.catalina.Loader");
 
+        // add session manager
         digester.addObjectCreate(prefix + "Context/Manager",
                                  "org.apache.catalina.session.StandardManager",
                                  "className");
@@ -144,6 +149,7 @@ public class ContextRuleSet extends RuleSetBase {
                             "setManager",
                             "org.apache.catalina.Manager");
 
+        // parse store
         digester.addObjectCreate(prefix + "Context/Manager/Store",
                                  null, // MUST be specified in the element
                                  "className");
@@ -152,6 +158,7 @@ public class ContextRuleSet extends RuleSetBase {
                             "setStore",
                             "org.apache.catalina.Store");
 
+        // add sessionid Generator
         digester.addObjectCreate(prefix + "Context/Manager/SessionIdGenerator",
                                  "org.apache.catalina.util.StandardSessionIdGenerator",
                                  "className");
@@ -160,6 +167,7 @@ public class ContextRuleSet extends RuleSetBase {
                             "setSessionIdGenerator",
                             "org.apache.catalina.SessionIdGenerator");
 
+        // add context application init params
         digester.addObjectCreate(prefix + "Context/Parameter",
                                  "org.apache.tomcat.util.descriptor.web.ApplicationParameter");
         digester.addSetProperties(prefix + "Context/Parameter");
@@ -167,8 +175,11 @@ public class ContextRuleSet extends RuleSetBase {
                             "addApplicationParameter",
                             "org.apache.tomcat.util.descriptor.web.ApplicationParameter");
 
+        // add realm
         digester.addRuleSet(new RealmRuleSet(prefix + "Context/"));
 
+
+        // add resources
         digester.addObjectCreate(prefix + "Context/Resources",
                                  "org.apache.catalina.webresources.StandardRoot",
                                  "className");
@@ -177,6 +188,7 @@ public class ContextRuleSet extends RuleSetBase {
                             "setResources",
                             "org.apache.catalina.WebResourceRoot");
 
+        // parse pre resources
         digester.addObjectCreate(prefix + "Context/Resources/PreResources",
                                  null, // MUST be specified in the element
                                  "className");
@@ -185,6 +197,7 @@ public class ContextRuleSet extends RuleSetBase {
                             "addPreResources",
                             "org.apache.catalina.WebResourceSet");
 
+        // parse jar resources
         digester.addObjectCreate(prefix + "Context/Resources/JarResources",
                                  null, // MUST be specified in the element
                                  "className");
@@ -193,6 +206,7 @@ public class ContextRuleSet extends RuleSetBase {
                             "addJarResources",
                             "org.apache.catalina.WebResourceSet");
 
+        // parse post resources
         digester.addObjectCreate(prefix + "Context/Resources/PostResources",
                                  null, // MUST be specified in the element
                                  "className");
@@ -202,6 +216,7 @@ public class ContextRuleSet extends RuleSetBase {
                             "org.apache.catalina.WebResourceSet");
 
 
+        // create resource link for context, used for naming service
         digester.addObjectCreate(prefix + "Context/ResourceLink",
                 "org.apache.tomcat.util.descriptor.web.ContextResourceLink");
         digester.addSetProperties(prefix + "Context/ResourceLink");
@@ -209,6 +224,7 @@ public class ContextRuleSet extends RuleSetBase {
                 new SetNextNamingRule("addResourceLink",
                         "org.apache.tomcat.util.descriptor.web.ContextResourceLink"));
 
+        // parse value
         digester.addObjectCreate(prefix + "Context/Valve",
                                  null, // MUST be specified in the element
                                  "className");
@@ -217,15 +233,21 @@ public class ContextRuleSet extends RuleSetBase {
                             "addValve",
                             "org.apache.catalina.Valve");
 
+        // call context addWatchedResource method
+        //  watched resource, used for reload file when resources changed
         digester.addCallMethod(prefix + "Context/WatchedResource",
                                "addWatchedResource", 0);
 
+        //  lifecycle listener to the wrappers of the context
         digester.addCallMethod(prefix + "Context/WrapperLifecycle",
                                "addWrapperLifecycle", 0);
 
+        // add container listener for wrapper of the context
         digester.addCallMethod(prefix + "Context/WrapperListener",
                                "addWrapperListener", 0);
 
+        // add jar scanner
+        // scan web app ...
         digester.addObjectCreate(prefix + "Context/JarScanner",
                                  "org.apache.tomcat.util.scan.StandardJarScanner",
                                  "className");
@@ -234,6 +256,7 @@ public class ContextRuleSet extends RuleSetBase {
                             "setJarScanner",
                             "org.apache.tomcat.JarScanner");
 
+        // add jar scanner filter
         digester.addObjectCreate(prefix + "Context/JarScanner/JarScanFilter",
                                  "org.apache.tomcat.util.scan.StandardJarScanFilter",
                                  "className");
@@ -242,6 +265,7 @@ public class ContextRuleSet extends RuleSetBase {
                             "setJarScanFilter",
                             "org.apache.tomcat.JarScanFilter");
 
+        // add cookie processor
         digester.addObjectCreate(prefix + "Context/CookieProcessor",
                                  "org.apache.tomcat.util.http.Rfc6265CookieProcessor",
                                  "className");
