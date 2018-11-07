@@ -4729,6 +4729,7 @@ public class StandardContext extends ContainerBase
         ArrayList<Object> eventListeners = new ArrayList<>();
         ArrayList<Object> lifecycleListeners = new ArrayList<>();
         for (int i = 0; i < results.length; i++) {
+            // event listener
             if ((results[i] instanceof ServletContextAttributeListener)
                 || (results[i] instanceof ServletRequestAttributeListener)
                 || (results[i] instanceof ServletRequestListener)
@@ -4736,6 +4737,7 @@ public class StandardContext extends ContainerBase
                 || (results[i] instanceof HttpSessionAttributeListener)) {
                 eventListeners.add(results[i]);
             }
+            // lifecycle listener
             if ((results[i] instanceof ServletContextListener)
                 || (results[i] instanceof HttpSessionListener)) {
                 lifecycleListeners.add(results[i]);
@@ -4975,6 +4977,7 @@ public class StandardContext extends ContainerBase
         for (ArrayList<Wrapper> list : map.values()) {
             for (Wrapper wrapper : list) {
                 try {
+                    // call wrapper(servlet) load method
                     wrapper.load();
                 } catch (ServletException e) {
                     getLogger().error(sm.getString("standardContext.loadOnStartup.loadException",
@@ -5007,10 +5010,12 @@ public class StandardContext extends ContainerBase
         if(log.isDebugEnabled())
             log.debug("Starting " + getBaseName());
 
+        // start JMX notifaction
         // Send j2ee.state.starting notification
         if (this.getObjectName() != null) {
             Notification notification = new Notification("j2ee.state.starting",
                     this.getObjectName(), sequenceNumber.getAndIncrement());
+            // send msg
             broadcaster.sendNotification(notification);
         }
 
@@ -5020,9 +5025,11 @@ public class StandardContext extends ContainerBase
         // Currently this is effectively a NO-OP but needs to be called to
         // ensure the NamingResources follows the correct lifecycle
         if (namingResources != null) {
+            // start JNDI naming resource
             namingResources.start();
         }
 
+        // prepare webResourceRoot
         // Post work directory
         postWorkDirectory();
 
@@ -5038,25 +5045,31 @@ public class StandardContext extends ContainerBase
                 ok = false;
             }
         }
+        // start webResourceRoot
         if (ok) {
             resourcesStart();
         }
 
+        // create webAppLoader
         if (getLoader() == null) {
             WebappLoader webappLoader = new WebappLoader(getParentClassLoader());
             webappLoader.setDelegate(getDelegate());
+            // set loader
             setLoader(webappLoader);
         }
 
         // An explicit cookie processor hasn't been specified; use the default
+        // set default cookie processor
         if (cookieProcessor == null) {
             cookieProcessor = new Rfc6265CookieProcessor();
         }
 
         // Initialize character set mapper
+        // charset mapper
         getCharsetMapper();
 
         // Validate required extensions
+        // valid ext
         boolean dependencyCheck = true;
         try {
             dependencyCheck = ExtensionValidator.validateApplication
@@ -5071,6 +5084,7 @@ public class StandardContext extends ContainerBase
             ok = false;
         }
 
+        // is using naming
         // Reading the "catalina.useNaming" environment variable
         String useNamingProperty = System.getProperty("catalina.useNaming");
         if ((useNamingProperty != null)
@@ -5078,6 +5092,7 @@ public class StandardContext extends ContainerBase
             useNaming = false;
         }
 
+        // add naming context listener
         if (ok && isUseNaming()) {
             if (getNamingContextListener() == null) {
                 NamingContextListener ncl = new NamingContextListener();
@@ -5100,6 +5115,7 @@ public class StandardContext extends ContainerBase
             if (ok) {
                 // Start our subordinate components, if any
                 Loader loader = getLoader();
+                // start webapploader
                 if (loader instanceof Lifecycle) {
                     ((Lifecycle) loader).start();
                 }
@@ -5127,6 +5143,7 @@ public class StandardContext extends ContainerBase
                 logger = null;
                 getLogger();
 
+                // start realm
                 Realm realm = getRealmInternal();
                 if(null != realm) {
                     if (realm instanceof Lifecycle) {
@@ -5151,8 +5168,10 @@ public class StandardContext extends ContainerBase
                 }
 
                 // Notify our interested LifecycleListeners
+                // fire configure_start_event
                 fireLifecycleEvent(Lifecycle.CONFIGURE_START_EVENT, null);
 
+                // start child node (wrapper)
                 // Start our child containers, if not already started
                 for (Container child : findChildren()) {
                     if (!child.getState().isAvailable()) {
@@ -5162,10 +5181,12 @@ public class StandardContext extends ContainerBase
 
                 // Start the Valves in our pipeline (including the basic),
                 // if any
+                // start pipeline
                 if (pipeline instanceof Lifecycle) {
                     ((Lifecycle) pipeline).start();
                 }
 
+                // create session mananger
                 // Acquire clustered manager
                 Manager contextManager = null;
                 Manager manager = getManager();
@@ -5209,10 +5230,12 @@ public class StandardContext extends ContainerBase
             }
 
             // We put the resources into the servlet context
+            // add webResourceRoot to servletContext
             if (ok)
                 getServletContext().setAttribute
                     (Globals.RESOURCES_ATTR, getResources());
 
+            // add instance manager used for create obj instance such as Servlet Filter
             if (ok ) {
                 if (getInstanceManager() == null) {
                     javax.naming.Context context = null;
@@ -5230,15 +5253,18 @@ public class StandardContext extends ContainerBase
             }
 
             // Create context attributes that will be required
+            // add jar scanner to servlet context
             if (ok) {
                 getServletContext().setAttribute(
                         JarScanner.class.getName(), getJarScanner());
             }
 
             // Set up the context init params
+            // merge context's applicationParameter and servletContext init param
             mergeParameters();
 
             // Call ServletContainerInitializers
+            // start servletContainerInitializer
             for (Map.Entry<ServletContainerInitializer, Set<Class<?>>> entry :
                 initializers.entrySet()) {
                 try {
@@ -5252,6 +5278,7 @@ public class StandardContext extends ContainerBase
             }
 
             // Configure and call application event listeners
+            // init applicationListener
             if (ok) {
                 if (!listenerStart()) {
                     log.error(sm.getString("standardContext.listenerFail"));
@@ -5269,6 +5296,7 @@ public class StandardContext extends ContainerBase
             try {
                 // Start manager
                 Manager manager = getManager();
+                // start session manager
                 if (manager instanceof Lifecycle) {
                     ((Lifecycle) manager).start();
                 }
@@ -5279,6 +5307,7 @@ public class StandardContext extends ContainerBase
 
             // Configure and call application filters
             if (ok) {
+                // init filterConfig(applicationFilterConfig), filter
                 if (!filterStart()) {
                     log.error(sm.getString("standardContext.filterFail"));
                     ok = false;
@@ -5287,6 +5316,7 @@ public class StandardContext extends ContainerBase
 
             // Load and initialize all "load on startup" servlets
             if (ok) {
+                //initialize all servlets which is load on startup
                 if (!loadOnStartup(findChildren())){
                     log.error(sm.getString("standardContext.servletFail"));
                     ok = false;
@@ -5294,6 +5324,7 @@ public class StandardContext extends ContainerBase
             }
 
             // Start ContainerBackgroundProcessor thread
+            // call container backgourndProcessor
             super.threadStart();
         } finally {
             // Unbinding thread
@@ -5311,6 +5342,7 @@ public class StandardContext extends ContainerBase
         startTime=System.currentTimeMillis();
 
         // Send j2ee.state.running notification
+        // send JMX notification
         if (ok && (this.getObjectName() != null)) {
             Notification notification =
                 new Notification("j2ee.state.running", this.getObjectName(),
@@ -5325,6 +5357,7 @@ public class StandardContext extends ContainerBase
         getResources().gc();
 
         // Reinitializing if something went wrong
+        // set Context state
         if (!ok) {
             setState(LifecycleState.FAILED);
         } else {
@@ -5414,6 +5447,7 @@ public class StandardContext extends ContainerBase
 
         ApplicationParameter params[] = findApplicationParameters();
         for (int i = 0; i < params.length; i++) {
+            // is override
             if (params[i].getOverride()) {
                 if (mergedParams.get(params[i].getName()) == null) {
                     mergedParams.put(params[i].getName(),

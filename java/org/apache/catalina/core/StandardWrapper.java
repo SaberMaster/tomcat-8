@@ -980,9 +980,11 @@ public class StandardWrapper extends ContainerBase
      */
     @Override
     public synchronized void load() throws ServletException {
+        // create servlet instance
         instance = loadServlet();
 
         if (!instanceInitialized) {
+            // init servlet
             initServlet(instance);
         }
 
@@ -1141,6 +1143,7 @@ public class StandardWrapper extends ContainerBase
                     }
                 }
             } else {
+                // call servlet init method
                 servlet.init(facade);
             }
 

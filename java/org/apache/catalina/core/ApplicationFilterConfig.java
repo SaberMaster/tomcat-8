@@ -104,11 +104,13 @@ public final class ApplicationFilterConfig implements FilterConfig, Serializable
         this.context = context;
         this.filterDef = filterDef;
         // Allocate a new filter instance if necessary
+        // init filter
         if (filterDef.getFilter() == null) {
             getFilter();
         } else {
             this.filter = filterDef.getFilter();
             getInstanceManager().newInstance(filter);
+            // call filter init
             initFilter();
         }
     }
