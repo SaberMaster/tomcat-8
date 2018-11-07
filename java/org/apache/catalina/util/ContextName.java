@@ -87,6 +87,7 @@ public final class ContextName {
             path = "/" + tmp2.replaceAll(FWD_SLASH_REPLACEMENT, "/");
         }
 
+        // context name = path + version?
         if (versionIndex > -1) {
             this.name = path + VERSION_MARKER + version;
         } else {

@@ -306,8 +306,10 @@ public class StandardHost extends ContainerBase implements Host {
         }
         String path = null;
         if (getXmlBase()!=null) {
+            // server.xml xmlBase properties
             path = getXmlBase();
         } else {
+            // conf/EngineName/HostName
             StringBuilder xmlDir = new StringBuilder("conf");
             Container parent = getParent();
             if (parent instanceof Engine) {
@@ -320,6 +322,7 @@ public class StandardHost extends ContainerBase implements Host {
         }
         File file = new File(path);
         if (!file.isAbsolute())
+            // catalina/conf/EngineName/HostName
             file = new File(getCatalinaBase(), path);
         try {
             file = file.getCanonicalFile();
@@ -845,7 +848,9 @@ public class StandardHost extends ContainerBase implements Host {
     @Override
     protected synchronized void startInternal() throws LifecycleException {
 
+        // start
         // Set error report valve
+        // add err report valve
         String errorValve = getErrorReportValveClass();
         if ((errorValve != null) && (!errorValve.equals(""))) {
             try {
@@ -869,6 +874,7 @@ public class StandardHost extends ContainerBase implements Host {
                         errorValve), t);
             }
         }
+        // call containerBase to start vhost
         super.startInternal();
     }
 

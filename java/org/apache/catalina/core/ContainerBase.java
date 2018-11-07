@@ -919,16 +919,19 @@ public abstract class ContainerBase extends LifecycleMBeanBase
         // Start our subordinate components, if any
         logger = null;
         getLogger();
+        // start cluster if exists
         Cluster cluster = getClusterInternal();
         if (cluster instanceof Lifecycle) {
             ((Lifecycle) cluster).start();
         }
+        // start realm if exists
         Realm realm = getRealmInternal();
         if (realm instanceof Lifecycle) {
             ((Lifecycle) realm).start();
         }
 
         // Start our child containers, if any
+        // start context in server.xml
         Container children[] = findChildren();
         List<Future<Void>> results = new ArrayList<>();
         for (int i = 0; i < children.length; i++) {
@@ -952,11 +955,14 @@ public abstract class ContainerBase extends LifecycleMBeanBase
         }
 
         // Start the Valves in our pipeline (including the basic), if any
+        // start pipeline
         if (pipeline instanceof Lifecycle) {
             ((Lifecycle) pipeline).start();
         }
 
 
+        // set state as starting
+        // trigger START_EVENT
         setState(LifecycleState.STARTING);
 
         // Start our thread
@@ -1137,7 +1143,7 @@ public abstract class ContainerBase extends LifecycleMBeanBase
 
         if (!getState().isAvailable())
             return;
-
+        // cluster bg
         Cluster cluster = getClusterInternal();
         if (cluster != null) {
             try {
@@ -1147,6 +1153,7 @@ public abstract class ContainerBase extends LifecycleMBeanBase
                         cluster), e);
             }
         }
+        // real bg
         Realm realm = getRealmInternal();
         if (realm != null) {
             try {
@@ -1155,6 +1162,7 @@ public abstract class ContainerBase extends LifecycleMBeanBase
                 log.warn(sm.getString("containerBase.backgroundProcess.realm", realm), e);
             }
         }
+        // valve bg
         Valve current = pipeline.getFirst();
         while (current != null) {
             try {
@@ -1164,6 +1172,7 @@ public abstract class ContainerBase extends LifecycleMBeanBase
             }
             current = current.getNext();
         }
+        // fire periodic event
         fireLifecycleEvent(Lifecycle.PERIODIC_EVENT, null);
     }
 
@@ -1291,6 +1300,7 @@ public abstract class ContainerBase extends LifecycleMBeanBase
 
         threadDone = false;
         String threadName = "ContainerBackgroundProcessor[" + toString() + "]";
+        // start background processor
         thread = new Thread(new ContainerBackgroundProcessor(), threadName);
         thread.setDaemon(true);
         thread.start();
@@ -1358,6 +1368,7 @@ public abstract class ContainerBase extends LifecycleMBeanBase
                         // Ignore
                     }
                     if (!threadDone) {
+                        // process bg
                         processChildren(ContainerBase.this);
                     }
                 }
@@ -1386,6 +1397,7 @@ public abstract class ContainerBase extends LifecycleMBeanBase
                     // is performed under the web app's class loader
                     originalClassLoader = ((Context) container).bind(false, null);
                 }
+                // process bg
                 container.backgroundProcess();
                 Container[] children = container.findChildren();
                 for (int i = 0; i < children.length; i++) {
