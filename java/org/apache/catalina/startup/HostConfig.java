@@ -606,7 +606,7 @@ public class HostConfig implements LifecycleListener {
 
             Class<?> clazz = Class.forName(host.getConfigClass());
             LifecycleListener listener = (LifecycleListener) clazz.getConstructor().newInstance();
-            // add lifecycle listener
+            // add lifecycle listener(contextConfig)
             context.addLifecycleListener(listener);
 
             // update context properties

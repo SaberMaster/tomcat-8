@@ -296,8 +296,10 @@ public class ContextConfig implements LifecycleListener {
 
         // Process the event that has occurred
         if (event.getType().equals(Lifecycle.CONFIGURE_START_EVENT)) {
+            // set config
             configureStart();
         } else if (event.getType().equals(Lifecycle.BEFORE_START_EVENT)) {
+            // start
             beforeStart();
         } else if (event.getType().equals(Lifecycle.AFTER_START_EVENT)) {
             // Restore docBase for management tools
@@ -307,6 +309,7 @@ public class ContextConfig implements LifecycleListener {
         } else if (event.getType().equals(Lifecycle.CONFIGURE_STOP_EVENT)) {
             configureStop();
         } else if (event.getType().equals(Lifecycle.AFTER_INIT_EVENT)) {
+            // before init
             init();
         } else if (event.getType().equals(Lifecycle.AFTER_DESTROY_EVENT)) {
             destroy();
@@ -449,16 +452,19 @@ public class ContextConfig implements LifecycleListener {
             defaultContextXml = ((StandardContext)context).getDefaultContextXml();
         }
         // set the default if we don't have any overrides
+        // default context xml (conf/context.xml)
         if (defaultContextXml == null) {
             defaultContextXml = Constants.DefaultContextXml;
         }
 
+        // is enable override
         if (!context.getOverride()) {
             File defaultContextFile = new File(defaultContextXml);
             if (!defaultContextFile.isAbsolute()) {
                 defaultContextFile =
                         new File(context.getCatalinaBase(), defaultContextXml);
             }
+            // parse default context file
             if (defaultContextFile.exists()) {
                 try {
                     URL defaultContextUrl = defaultContextFile.toURI().toURL();
@@ -468,7 +474,7 @@ public class ContextConfig implements LifecycleListener {
                             "contextConfig.badUrl", defaultContextFile), e);
                 }
             }
-
+            // parse host default context file (context.xml.default)
             File hostContextFile = new File(getHostConfigBase(), Constants.HostContextXml);
             if (hostContextFile.exists()) {
                 try {
@@ -480,6 +486,7 @@ public class ContextConfig implements LifecycleListener {
                 }
             }
         }
+        // parse app context.xml
         if (context.getConfigFile() != null) {
             processContextConfig(digester, context.getConfigFile());
         }
@@ -590,6 +597,7 @@ public class ContextConfig implements LifecycleListener {
         String pathName = cn.getBaseName();
 
         boolean unpackWARs = true;
+        // is enable unpack war
         if (host instanceof StandardHost) {
             unpackWARs = ((StandardHost) host).isUnpackWARs();
             if (unpackWARs && context instanceof StandardContext) {
@@ -599,9 +607,11 @@ public class ContextConfig implements LifecycleListener {
 
         boolean docBaseInAppBase = docBase.startsWith(appBase.getPath() + File.separatorChar);
 
+        // has war package, dir not exist
         if (docBase.toLowerCase(Locale.ENGLISH).endsWith(".war") && !file.isDirectory()) {
             URL war = UriUtil.buildJarUrl(new File(docBase));
             if (unpackWARs) {
+                // expand war package
                 docBase = ExpandWar.expand(host, war, pathName);
                 file = new File(docBase);
                 docBase = file.getCanonicalPath();
@@ -612,6 +622,7 @@ public class ContextConfig implements LifecycleListener {
                 ExpandWar.validate(host, war, pathName);
             }
         } else {
+            // dir exist
             File docDir = new File(docBase);
             File warFile = new File(docBase + ".war");
             URL war = null;
@@ -656,6 +667,7 @@ public class ContextConfig implements LifecycleListener {
             docBase = docBase.replace(File.separatorChar, '/');
         }
 
+        // reset docbase
         context.setDocBase(docBase);
     }
 
@@ -716,6 +728,7 @@ public class ContextConfig implements LifecycleListener {
     protected void init() {
         // Called from StandardContext.init()
 
+        // parse context
         Digester contextDigester = createContextDigester();
         contextDigester.getParser();
 
@@ -735,6 +748,7 @@ public class ContextConfig implements LifecycleListener {
     protected synchronized void beforeStart() {
 
         try {
+            // fix doc
             fixDocBase();
         } catch (IOException e) {
             log.error(sm.getString(
@@ -762,8 +776,10 @@ public class ContextConfig implements LifecycleListener {
                     Boolean.valueOf(context.getXmlNamespaceAware())));
         }
 
+        // scan web.xml
         webConfig();
 
+        // scan servlet filter listener annotation
         if (!context.getIgnoreAnnotations()) {
             applicationAnnotationsConfig();
         }
@@ -1100,6 +1116,7 @@ public class ContextConfig implements LifecycleListener {
         WebXml webXml = createWebXml();
 
         // Parse context level web.xml
+        // parse context element in web.xml
         InputSource contextWebXml = getContextWebXmlSource();
         if (!webXmlParser.parseWebXml(contextWebXml, webXml, false)) {
             ok = false;
@@ -1140,6 +1157,7 @@ public class ContextConfig implements LifecycleListener {
                     if ("META-INF".equals(webResource.getName())) {
                         continue;
                     }
+                    // scan @HandlesTypes annotations  in /WEB-INF/classes
                     processAnnotationsWebResource(webResource, webXml,
                             webXml.isMetadataComplete(), javaClassCache);
                 }
@@ -1149,6 +1167,7 @@ public class ContextConfig implements LifecycleListener {
             // @HandlesTypes matches - only need to process those fragments we
             // are going to use (remember orderedFragments includes any
             // container fragments)
+            // process fragments annotation
             if (ok) {
                 processAnnotations(
                         orderedFragments, webXml.isMetadataComplete(), javaClassCache);
@@ -1159,6 +1178,7 @@ public class ContextConfig implements LifecycleListener {
         }
 
         if (!webXml.isMetadataComplete()) {
+            // merge web.xml
             // Step 6. Merge web-fragment.xml files into the main web.xml
             // file.
             if (ok) {
@@ -1168,15 +1188,18 @@ public class ContextConfig implements LifecycleListener {
             // Step 7. Apply global defaults
             // Have to merge defaults before JSP conversion since defaults
             // provide JSP servlet definition.
+            // merge default web.xml
             webXml.merge(defaults);
 
             // Step 8. Convert explicitly mentioned jsps to servlets
+            // convert jsp
             if (ok) {
                 convertJsps(webXml);
             }
 
             // Step 9. Apply merged web.xml to Context
             if (ok) {
+                // apply web.xml to context
                 configureContext(webXml);
             }
         } else {
@@ -1191,6 +1214,7 @@ public class ContextConfig implements LifecycleListener {
 
         // Always need to look for static resources
         // Step 10. Look for static resources packaged in JARs
+        // scan static all resources in web.xml
         if (ok) {
             // Spec does not define an order.
             // Use ordered JARs followed by remaining JARs
@@ -1210,6 +1234,7 @@ public class ContextConfig implements LifecycleListener {
 
         // Step 11. Apply the ServletContainerInitializer config to the
         // context
+        //Apply the ServletContainerInitializer config to context
         if (ok) {
             for (Map.Entry<ServletContainerInitializer,
                     Set<Class<?>>> entry :
