@@ -338,6 +338,7 @@ public class CoyoteAdapter implements Adapter {
                 //check valves if we support async
                 request.setAsyncSupported(
                         connector.getService().getContainer().getPipeline().isAsyncSupported());
+                // invoke pipeline
                 // Calling the container
                 connector.getService().getContainer().getPipeline().getFirst().invoke(
                         request, response);
@@ -670,12 +671,15 @@ public class CoyoteAdapter implements Adapter {
 
         // Version for the second mapping loop and
         // Context that we expect to get for that version
+        // define 3 local var
         String version = null;
         Context versionContext = null;
         boolean mapRequired = true;
 
         while (mapRequired) {
             // This will map the the latest version by default
+            // Mapper.map
+            // important
             connector.getService().getMapper().map(serverName, decodedURI,
                     version, request.getMappingData());
 
@@ -711,6 +715,7 @@ public class CoyoteAdapter implements Adapter {
             }
 
             // Look for session ID in cookies and SSL session
+            // try to get session Id
             parseSessionCookiesId(request);
             parseSessionSslId(request);
 
@@ -726,6 +731,7 @@ public class CoyoteAdapter implements Adapter {
                 Context[] contexts = request.getMappingData().contexts;
                 // Single contextVersion means no need to remap
                 // No session ID means no possibility of remap
+                // sessionId is null
                 if (contexts != null && sessionID != null) {
                     // Find the context associated with the session
                     for (int i = (contexts.length); i > 0; i--) {
@@ -733,6 +739,7 @@ public class CoyoteAdapter implements Adapter {
                         if (ctxt.getManager().findSession(sessionID) != null) {
                             // We found a context. Is it the one that has
                             // already been mapped?
+                            // result context not match
                             if (!ctxt.equals(request.getMappingData().context)) {
                                 // Set version so second time through mapping
                                 // the correct context is found
@@ -749,10 +756,12 @@ public class CoyoteAdapter implements Adapter {
                             }
                             break;
                         }
+                        // session out of date or equal to result
                     }
                 }
             }
 
+            // context is reloading
             if (!mapRequired && request.getContext().getPaused()) {
                 // Found a matching context but it is paused. Mapping data will
                 // be wrong since some Wrappers may not be registered at this

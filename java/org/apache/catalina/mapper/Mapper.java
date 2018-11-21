@@ -742,6 +742,7 @@ public final class Mapper {
 
         uri.setLimit(-1);
 
+        // mapping host
         // Virtual host mapping
         MappedHost[] hosts = this.hosts;
         MappedHost mappedHost = exactFindIgnoreCase(hosts, host);
@@ -768,6 +769,7 @@ public final class Mapper {
         }
         mappingData.host = mappedHost.object;
 
+        // mapping context
         // Context mapping
         ContextList contextList = mappedHost.contextList;
         MappedContext[] contexts = contextList.contexts;
@@ -837,6 +839,7 @@ public final class Mapper {
         mappingData.context = contextVersion.object;
         mappingData.contextSlashCount = contextVersion.slashCount;
 
+        // mapping wrapper
         // Wrapper mapping
         if (!contextVersion.isPaused()) {
             internalMapWrapper(contextVersion, uri, mappingData);
@@ -915,6 +918,7 @@ public final class Mapper {
                     true);
         }
 
+        // welcome mapping
         // Rule 4 -- Welcome resources processing for servlets
         if (mappingData.wrapper == null) {
             boolean checkWelcomeFiles = checkJspWelcomeFiles;
@@ -943,6 +947,7 @@ public final class Mapper {
 
                     // Rule 4c -- Welcome resources processing
                     //            for physical folder
+                    // use physical file first
                     if (mappingData.wrapper == null
                         && contextVersion.resources != null) {
                         String pathStr = path.toString();
